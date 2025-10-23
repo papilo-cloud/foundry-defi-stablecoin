@@ -29,6 +29,7 @@ import {DecentralizedStableCoin} from "./DecentralizedStablecoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "../script/libraries/OracleLib.sol";
 
 /**
  * @title DecentralizedStableCoin Engine
@@ -65,6 +66,9 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__TransferFailed();
     error DSCEngine__NotEnoughDSCToBurn();
     error DSCEngine__NotAllowedToLiquidate();
+
+    //////////////////////////// TYPES ////////////////////////////
+    using OracleLib for AggregatorV3Interface;
 
     //////////////// STATE VARIABLES ////////////////
     mapping(address tokenAddress => address priceFeedAddress) private s_priceFeeds;
@@ -378,7 +382,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function _getUsdValue(address _token, uint256 _amount) internal view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[_token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * _amount) / PRECISION; 
     }
 
@@ -407,7 +411,7 @@ contract DSCEngine is ReentrancyGuard {
         returns (uint256)
     {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[_token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         return (_usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);    
     }
 
